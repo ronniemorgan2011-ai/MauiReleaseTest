@@ -1,1 +1,43 @@
+name: MAUI Release Test
 
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install MAUI workload
+        run: dotnet workload install maui --version 10.0.401
+
+      - name: Build Release
+        run: |
+          dotnet publish MauiReleaseTest.csproj \
+            -f net10.0-ios \
+            -c Release \
+            -p:RuntimeIdentifier=ios-arm64 \
+            -bl:publish.binlog
+
+      - name: Find IPA
+        if: always()
+        run: |
+          find . -name "*.ipa"
+
+      - name: Upload Binlog
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-binlog
+          path: publish.binlog
